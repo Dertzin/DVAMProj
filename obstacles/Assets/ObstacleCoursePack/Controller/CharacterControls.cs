@@ -1,12 +1,16 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Runtime.CompilerServices;
+using System.Threading;
 
-[RequireComponent (typeof (Rigidbody))]
-[RequireComponent (typeof (CapsuleCollider))]
+[RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(CapsuleCollider))]
 
-public class CharacterControls : MonoBehaviour {
-	
+public class CharacterControls : MonoBehaviour
+{
+
 	public float speed = 10.0f;
+	private const float startspeed = 10.0f;
 	public float airVelocity = 8f;
 	public float gravity = 10.0f;
 	public float maxVelocityChange = 10.0f;
@@ -28,16 +32,28 @@ public class CharacterControls : MonoBehaviour {
 	public Vector3 checkPoint;
 	private bool slide = false;
 
-	void  Start (){
+	public string playerNumber;
+	private bool onAcceleration;
+	private float accelerationCounter;
+
+	private float timer = 0f;
+	private int minutesCount = 0;
+	private int secondsCount = 0;
+
+	void Start()
+	{
 		// get the distance to ground
 		distToGround = GetComponent<Collider>().bounds.extents.y;
+		onAcceleration = false;
 	}
-	
-	bool IsGrounded (){
+
+	bool IsGrounded()
+	{
 		return Physics.Raycast(transform.position, -Vector3.up, distToGround + 0.1f);
 	}
-	
-	void Awake () {
+
+	void Awake()
+	{
 		rb = GetComponent<Rigidbody>();
 		rb.freezeRotation = true;
 		rb.useGravity = false;
@@ -45,8 +61,9 @@ public class CharacterControls : MonoBehaviour {
 		checkPoint = transform.position;
 		Cursor.visible = false;
 	}
-	
-	void FixedUpdate () {
+
+	void FixedUpdate()
+	{
 		if (canMove)
 		{
 			if (moveDir.x != 0 || moveDir.z != 0)
@@ -63,7 +80,7 @@ public class CharacterControls : MonoBehaviour {
 
 			if (IsGrounded())
 			{
-			 // Calculate how fast we should be moving
+				// Calculate how fast we should be moving
 				Vector3 targetVelocity = moveDir;
 				targetVelocity *= speed;
 
@@ -90,7 +107,7 @@ public class CharacterControls : MonoBehaviour {
 				}
 
 				// Jump
-				if (IsGrounded() && Input.GetButton("Jump"))
+				if (IsGrounded() && Input.GetButton("Jump"+playerNumber))
 				{
 					rb.velocity = new Vector3(velocity.x, CalculateJumpVerticalSpeed(), velocity.z);
 				}
@@ -124,8 +141,9 @@ public class CharacterControls : MonoBehaviour {
 
 	private void Update()
 	{
-		float h = Input.GetAxis("Horizontal");
-		float v = Input.GetAxis("Vertical");
+
+		float h = Input.GetAxis("Player" + playerNumber + "X");
+		float v = Input.GetAxis("Player" + playerNumber + "Y");
 
 		Vector3 v2 = v * cam.transform.forward; //Vertical axis to which I want to move with respect to the camera
 		Vector3 h2 = h * cam.transform.right; //Horizontal axis to which I want to move with respect to the camera
@@ -143,9 +161,13 @@ public class CharacterControls : MonoBehaviour {
 				slide = false;
 			}
 		}
+
+		AccelerattionTime();
+		SpeedReturn();
 	}
 
-	float CalculateJumpVerticalSpeed () {
+	float CalculateJumpVerticalSpeed()
+	{
 		// From the jump height and gravity we deduce the upwards speed 
 		// for the character to reach at the apex.
 		return Mathf.Sqrt(2 * jumpHeight * gravity);
@@ -195,6 +217,36 @@ public class CharacterControls : MonoBehaviour {
 		{
 			isStuned = false;
 			canMove = true;
+		}
+	}
+
+	public void SetPlayerNumber(string number)
+	{
+		playerNumber = number;
+	}
+
+	public void IncreaseOrDescreaseSpeed(float quantity)
+	{
+		speed += quantity;
+		onAcceleration = true;
+	}
+
+	private void AccelerattionTime()
+	{
+		if (onAcceleration)
+		{
+			accelerationCounter += Time.deltaTime;
+			if (accelerationCounter > 3)
+			{
+				onAcceleration = false;
+			}
+		}
+	}
+	private void SpeedReturn()
+	{
+		if (!onAcceleration)
+		{
+			speed = startspeed;
 		}
 	}
 }
